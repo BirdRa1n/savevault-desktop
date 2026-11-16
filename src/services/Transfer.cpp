@@ -126,7 +126,8 @@ Result<ExportRecord> exportGames(const vault::Vault &vault, const ExportRequest 
 }
 
 Result<ImportReport> importGamesave(vault::Vault &vault, const archive::GamesaveReader &reader,
-                                    LocalProfileStore *localProfiles, const QSet<QString> &knownGameIds)
+                                    LocalProfileStore *localProfiles, const QSet<QString> &knownGameIds,
+                                    const QSet<QString> &onlyGameIds)
 {
     const archive::GamesaveManifest &manifest = reader.manifest();
     // Incremental exports need their base: every omitted blob must already be here.
@@ -141,6 +142,8 @@ Result<ImportReport> importGamesave(vault::Vault &vault, const archive::Gamesave
     ImportReport report;
     const auto source = [&reader](const QString &sha256) { return reader.blob(sha256); };
     for (const archive::GamesaveGame &game : manifest.games) {
+        if (!onlyGameIds.isEmpty() && !onlyGameIds.contains(game.gameId))
+            continue;
         report.games.append(game.name);
         if (game.localProfile && localProfiles && !knownGameIds.contains(game.gameId)) {
             auto stored = localProfiles->importProfileJson(QJsonDocument(*game.localProfile).toJson());

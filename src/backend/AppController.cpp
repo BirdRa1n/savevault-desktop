@@ -1105,7 +1105,8 @@ QVariantMap AppController::inspectGamesave(const QUrl &file) const
     const archive::GamesaveManifest &manifest = reader.value().manifest();
     QVariantList games;
     for (const archive::GamesaveGame &game : manifest.games)
-        games.append(QVariantMap{{QStringLiteral("name"), game.name},
+        games.append(QVariantMap{{QStringLiteral("id"), game.gameId},
+                                 {QStringLiteral("name"), game.name},
                                  {QStringLiteral("snapshots"), static_cast<int>(game.snapshots.size())}});
     bool missingBase = false;
     for (const QString &blob : reader.value().missingBlobs()) {
@@ -1122,7 +1123,7 @@ QVariantMap AppController::inspectGamesave(const QUrl &file) const
             {QStringLiteral("sourceOs"), manifest.sourceOs}};
 }
 
-void AppController::importGamesave(const QUrl &file)
+void AppController::importGamesave(const QUrl &file, const QStringList &gameIds)
 {
     if (!m_vault) {
         log(tr("O vault não está disponível: %1").arg(m_vaultError), QStringLiteral("error"));
@@ -1134,14 +1135,15 @@ void AppController::importGamesave(const QUrl &file)
         known.insert(game.id());
     vault::Vault *vaultPtr = &*m_vault;
     const QString localDir = m_settings.localProfilesDirectory();
+    const QSet<QString> only(gameIds.cbegin(), gameIds.cend());
     run<Result<services::ImportReport>>(
         tr("Importando…"),
-        [vaultPtr, path, localDir, known]() -> Result<services::ImportReport> {
+        [vaultPtr, path, localDir, known, only]() -> Result<services::ImportReport> {
             const auto reader = archive::GamesaveReader::open(path);
             if (!reader.ok())
                 return reader.error();
             services::LocalProfileStore local(localDir);
-            return services::importGamesave(*vaultPtr, reader.value(), &local, known);
+            return services::importGamesave(*vaultPtr, reader.value(), &local, known, only);
         },
         [this](Result<services::ImportReport> report) {
             if (!report.ok()) {

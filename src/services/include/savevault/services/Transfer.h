@@ -70,9 +70,11 @@ struct ImportReport {
 // (gamesave/SPEC.md section 5). An incremental export is refused, naming its
 // base export, when the vault lacks a blob the archive omits. Local profiles
 // in the archive are stored in `localProfiles` (when given) for games whose id
-// is not in `knownGameIds`.
+// is not in `knownGameIds`. A non-empty `onlyGameIds` imports just those
+// games from the archive and skips the rest.
 [[nodiscard]] Result<ImportReport> importGamesave(vault::Vault &vault, const archive::GamesaveReader &reader,
                                                   LocalProfileStore *localProfiles = nullptr,
-                                                  const QSet<QString> &knownGameIds = {});
+                                                  const QSet<QString> &knownGameIds = {},
+                                                  const QSet<QString> &onlyGameIds = {});
 
 } // namespace savevault::services

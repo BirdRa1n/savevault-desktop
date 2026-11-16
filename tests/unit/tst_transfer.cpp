@@ -76,6 +76,31 @@ private slots:
         QCOMPARE(readFile(target.saveDir() + QStringLiteral("/slot1.sav")), QByteArray("chapter 2"));
     }
 
+    void importsOnlyTheChosenGames()
+    {
+        ServiceFixture source;
+        writeFile(source.saveDir() + QStringLiteral("/slot1.sav"), "a");
+        backup(source);
+        QTemporaryDir out;
+        const ExportRequest request = requestFor(source, out.path() + QStringLiteral("/saves.gamesave"));
+        QVERIFY(exportGames(*source.vault, request).ok());
+        const QString gameId = source.target().effectiveGameId();
+        const auto reader = archive::GamesaveReader::open(request.path);
+        QVERIFY(reader.ok());
+
+        ServiceFixture target;
+        const auto skipped = importGamesave(*target.vault, reader.value(), nullptr, {}, {QStringLiteral("other-game")});
+        QVERIFY(skipped.ok());
+        QCOMPARE(skipped.value().imported, 0);
+        QVERIFY(skipped.value().games.isEmpty());
+        QVERIFY(target.vault->snapshots(gameId).isEmpty());
+
+        const auto chosen = importGamesave(*target.vault, reader.value(), nullptr, {}, {gameId});
+        QVERIFY(chosen.ok());
+        QCOMPARE(chosen.value().imported, 1);
+        QCOMPARE(target.vault->snapshots(gameId).size(), 1);
+    }
+
     void latestOnlyExportsOneSnapshotPerGame()
     {
         ServiceFixture f;

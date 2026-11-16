@@ -177,7 +177,7 @@ public:
     Q_INVOKABLE void exportGames(const QStringList &gameIds, const QUrl &file, bool allHistory, bool incremental,
                                  bool includeUserFolders);
     // Opens and checks a .gamesave without importing it:
-    // {ok, error, games: [{name, snapshots}], incremental, date, sourceOs, missingBase}
+    // {ok, error, games: [{id, name, snapshots}], incremental, date, sourceOs, missingBase}
     Q_INVOKABLE QVariantMap inspectGamesave(const QUrl &file) const;
     // Applies the retention policy to every game and frees the space of
     // backups no longer needed.
@@ -189,8 +189,9 @@ public:
     // Deletes one backup (not pinned ones). Its files' space is freed by the next clean-up.
     Q_INVOKABLE void deleteSnapshot(const QString &gameId, const QString &snapshotId);
 
-    // Adds the backups of a .gamesave to the vault; restores nothing.
-    Q_INVOKABLE void importGamesave(const QUrl &file);
+    // Adds the backups of the chosen games in a .gamesave to the vault (all of
+    // them when `gameIds` is empty); restores nothing.
+    Q_INVOKABLE void importGamesave(const QUrl &file, const QStringList &gameIds = {});
 
     // Verifies and caches a registry distribution chosen by the user, then refreshes.
     Q_INVOKABLE void importRegistry(const QUrl &folder);
