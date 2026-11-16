@@ -223,89 +223,178 @@ Item {
         }
     }
 
-    // Shows what a .gamesave holds before importing it.
-    Popup {
+    // Shows what a .gamesave holds and lets the user pick which games to
+    // import. A side drawer with its own scrolling list, so the actions stay
+    // reachable however many games the file has.
+    Drawer {
         id: importPreview
         objectName: "importPreview"
+
+        property var chosen: ({})
+        readonly property var archiveGames: root.preview.ok === true ? root.preview.games : []
+        readonly property int chosenCount: Object.keys(chosen).filter(id => chosen[id]).length
+
+        function setAll(value) {
+            const all = {}
+            for (const game of archiveGames)
+                all[game.id] = value
+            chosen = all
+        }
+
+        parent: Overlay.overlay
+        edge: Qt.RightEdge
         modal: true
         focus: true
-        width: 520
-        anchors.centerIn: Overlay.overlay
-        padding: Theme.space6
+        width: Math.min(520, (parent ? parent.width : 520) - Theme.space8)
+        height: parent ? parent.height : 0
+        padding: 0
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        onAboutToShow: setAll(true)
 
         background: Rectangle {
-            radius: Theme.radiusCard
             color: Theme.surface
-            border.color: Theme.borderStrong
+            Rectangle {
+                width: 1
+                height: parent.height
+                color: Theme.borderStrong
+            }
         }
         Overlay.modal: Rectangle { color: Theme.scrim }
 
         contentItem: ColumnLayout {
-            spacing: Theme.space4
+            spacing: 0
 
-            Text {
+            ColumnLayout {
                 Layout.fillWidth: true
-                text: root.preview.ok === true ? qsTr("Importar backups") : qsTr("Não foi possível abrir o arquivo")
-                color: Theme.text
-                font.family: Theme.fontDisplay
-                font.pixelSize: Theme.textSectionTitle
-                font.weight: Font.Bold
-                Accessible.role: Accessible.Heading
-            }
-            Paragraph {
-                visible: root.preview.ok !== true
-                text: root.preview.error || ""
-            }
-            Paragraph {
-                visible: root.preview.ok === true
-                text: qsTr("Exportado em %1.").arg(root.preview.date || "")
-            }
-            Repeater {
-                model: root.preview.ok === true ? root.preview.games : []
-                delegate: Text {
-                    required property var modelData
+                Layout.margins: Theme.space6
+                Layout.bottomMargin: Theme.space3
+                spacing: Theme.space3
+
+                Text {
                     Layout.fillWidth: true
-                    text: "•  " + modelData.name + "  ·  " + Format.count(modelData.snapshots, qsTr("backup"), qsTr("backups"))
+                    text: root.preview.ok === true ? qsTr("Importar backups") : qsTr("Não foi possível abrir o arquivo")
                     color: Theme.text
-                    font.family: Theme.fontBody
-                    font.pixelSize: Theme.textBody
-                    elide: Text.ElideRight
+                    font.family: Theme.fontDisplay
+                    font.pixelSize: Theme.textSectionTitle
+                    font.weight: Font.Bold
+                    wrapMode: Text.Wrap
+                    Accessible.role: Accessible.Heading
+                }
+                Paragraph {
+                    visible: root.preview.ok !== true
+                    text: root.preview.error || ""
+                }
+                Paragraph {
+                    visible: root.preview.ok === true
+                    text: qsTr("Exportado em %1. Escolha os jogos que quer importar.").arg(root.preview.date || "")
+                }
+                RowLayout {
+                    visible: importPreview.archiveGames.length > 1
+                    spacing: Theme.space2
+                    SecondaryButton {
+                        text: qsTr("Selecionar todos")
+                        enabled: importPreview.chosenCount < importPreview.archiveGames.length
+                        onClicked: importPreview.setAll(true)
+                    }
+                    SecondaryButton {
+                        text: qsTr("Limpar seleção")
+                        enabled: importPreview.chosenCount > 0
+                        onClicked: importPreview.setAll(false)
+                    }
                 }
             }
+
             Rectangle {
                 Layout.fillWidth: true
-                visible: root.preview.missingBase === true
-                implicitHeight: baseWarning.implicitHeight + 2 * Theme.space3
-                radius: Theme.radiusControl
-                color: Theme.warningBg
-                Text {
-                    id: baseWarning
-                    anchors.fill: parent
-                    anchors.margins: Theme.space3
-                    text: qsTr("Esta é uma exportação incremental: importe antes a exportação anterior, de onde ela continua.")
-                    color: Theme.warningFg
-                    font.family: Theme.fontBody
-                    font.pixelSize: Theme.textBody
-                    wrapMode: Text.Wrap
+                implicitHeight: 1
+                visible: importPreview.archiveGames.length > 0
+                color: Theme.border
+            }
+
+            ListView {
+                id: importList
+                objectName: "importList"
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                visible: importPreview.archiveGames.length > 0
+                clip: true
+                boundsBehavior: Flickable.StopAtBounds
+                topMargin: Theme.space2
+                bottomMargin: Theme.space2
+                leftMargin: Theme.space4
+                rightMargin: Theme.space4
+                model: importPreview.archiveGames
+                ScrollBar.vertical: ScrollBar {}
+
+                delegate: CheckItem {
+                    required property var modelData
+                    width: ListView.view.width - ListView.view.leftMargin - ListView.view.rightMargin
+                    text: modelData.name
+                    detail: Format.count(modelData.snapshots, qsTr("backup"), qsTr("backups"))
+                    checked: importPreview.chosen[modelData.id] === true
+                    onToggled: {
+                        const copy = Object.assign({}, importPreview.chosen)
+                        copy[modelData.id] = checked
+                        importPreview.chosen = copy
+                    }
                 }
             }
-            RowLayout {
+
+            // Keeps the footer at the bottom when there is no list.
+            Item {
+                Layout.fillHeight: true
+                visible: !importList.visible
+            }
+
+            Rectangle {
                 Layout.fillWidth: true
-                Layout.topMargin: Theme.space2
-                spacing: Theme.space3
-                Item { Layout.fillWidth: true }
-                SecondaryButton {
-                    text: root.preview.ok === true ? qsTr("Cancelar") : qsTr("Fechar")
-                    onClicked: importPreview.close()
+                implicitHeight: 1
+                color: Theme.border
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.margins: Theme.space6
+                Layout.topMargin: Theme.space4
+                spacing: Theme.space4
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    visible: root.preview.missingBase === true
+                    implicitHeight: baseWarning.implicitHeight + 2 * Theme.space3
+                    radius: Theme.radiusControl
+                    color: Theme.warningBg
+                    Text {
+                        id: baseWarning
+                        anchors.fill: parent
+                        anchors.margins: Theme.space3
+                        text: qsTr("Esta é uma exportação incremental: importe antes a exportação anterior, de onde ela continua.")
+                        color: Theme.warningFg
+                        font.family: Theme.fontBody
+                        font.pixelSize: Theme.textBody
+                        wrapMode: Text.Wrap
+                    }
                 }
-                PrimaryButton {
-                    visible: root.preview.ok === true
-                    text: qsTr("Importar")
-                    enabled: root.preview.missingBase !== true && !AppController.busy
-                    onClicked: {
-                        AppController.importGamesave(root.importFile)
-                        importPreview.close()
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.space3
+                    Item { Layout.fillWidth: true }
+                    SecondaryButton {
+                        text: root.preview.ok === true ? qsTr("Cancelar") : qsTr("Fechar")
+                        onClicked: importPreview.close()
+                    }
+                    PrimaryButton {
+                        visible: root.preview.ok === true
+                        text: importPreview.chosenCount > 0
+                              ? qsTr("Importar %1").arg(Format.count(importPreview.chosenCount, qsTr("jogo"), qsTr("jogos")))
+                              : qsTr("Importar")
+                        enabled: importPreview.chosenCount > 0 && root.preview.missingBase !== true && !AppController.busy
+                        onClicked: {
+                            AppController.importGamesave(root.importFile,
+                                                         importPreview.archiveGames.filter(g => importPreview.chosen[g.id])
+                                                                                   .map(g => g.id))
+                            importPreview.close()
+                        }
                     }
                 }
             }

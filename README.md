@@ -11,7 +11,7 @@ Aplicativo desktop open source para encontrar, fazer backup e restaurar saves de
 > - restauração segura (plano prévio, ponto de desfazer, troca atômica, política de cloud do launcher);
 > - jogos adicionados à mão e perfis locais, que têm prioridade sobre o Registry;
 > - saves com nome, entre os quais se alterna sem perder o progresso de nenhum, e backups automáticos (ao fechar o jogo ou periódicos), com o app na bandeja do sistema;
-> - exportação e importação de arquivos `.gamesave` (completa ou incremental) para levar saves a outro computador.
+> - exportação e importação de arquivos `.gamesave` (completa ou incremental) para levar saves a outro computador; na importação, um painel lateral lista os jogos do arquivo para escolher quais trazer.
 >
 > Ainda faltam as chaves de produção do Registry e os saves no registro dentro de prefixos Wine/Proton.
 
