@@ -10,6 +10,10 @@
   - **Atalhos:** `Ctrl+K` busca, `Ctrl+B` faz backup, `Ctrl+R` restaura, `Ctrl+T` troca de save e as setas navegam pela lista.
 - **Ícone novo:** uma porta de cofre.
 
+### Melhorias da alpha.4
+
+- **Importação:** a lista de jogos de um `.gamesave` agora abre num painel lateral com rolagem, onde você escolhe quais jogos importar. Antes, com muitos jogos no arquivo, o botão "Importar" ficava fora da tela.
+
 ### Melhorias da alpha.3
 
 - **Menos memória:** na bandeja, o app usa cerca de 55 MB em vez de 170 MB. Isso acontece porque a janela é descarregada enquanto fica escondida e volta ao abrir, sem procurar os jogos de novo.
